@@ -253,7 +253,7 @@ void getDataFromFile(ifstream * in, vector<int> * tab)
 
 }
 
-void markEstruaryFields(vector<int> * tab, vector<int> * eFields, int * w, int * h)
+void markEstruaryFieldsNaive(vector<int> * tab, vector<int> * eFields, int * w, int * h)
 {
 	for (int i = 0; i < *h; ++i)
 	{
@@ -273,7 +273,7 @@ void markEstruaryFields(vector<int> * tab, vector<int> * eFields, int * w, int *
 }
 
 
-void markEstruaryFieldsNaive(vector<int> * tab, vector<int> * eFields, vector<int> * vFields, int * w, int * h)
+void markEstruaryFields(vector<int> * tab, vector<int> * eFields, vector<int> * vFields, int * w, int * h)
 {
 	for (int i = 0; i < *h; ++i)
 	{
@@ -336,28 +336,28 @@ bool tryFloodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int
 	if ((*table)[leftFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x - 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFlood(table, estruaryFields, checkedFields, x - 1, y, w, h, fieldHeight))
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x - 1, y, w, h, fieldHeight))
 			return false;
 	}
 
 	if ((*table)[rightFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x + 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFlood(table, estruaryFields, checkedFields, x + 1, y, w, h, fieldHeight))
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x + 1, y, w, h, fieldHeight))
 			return false;
 	}
 
 	if ((*table)[upFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y - 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFlood(table, estruaryFields, checkedFields, x, y - 1, w, h, fieldHeight))
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y - 1, w, h, fieldHeight))
 			return false;
 	}
 
 	if ((*table)[downFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y + 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFlood(table, estruaryFields, checkedFields, x, y + 1, w, h, fieldHeight))
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y + 1, w, h, fieldHeight))
 			return false;
 	}
 
@@ -389,28 +389,28 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 	if ((*table)[leftFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x - 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFloodNaive(table, estruaryFields, checkedFields, x - 1, y, w, h))
+		if (!tryFlood(table, estruaryFields, checkedFields, x - 1, y, w, h))
 			return false;
 	}
 
 	if ((*table)[rightFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x + 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFloodNaive(table, estruaryFields, checkedFields, x + 1, y, w, h))
+		if (!tryFlood(table, estruaryFields, checkedFields, x + 1, y, w, h))
 			return false;
 	}
 
 	if ((*table)[upFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y - 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y - 1, w, h))
+		if (!tryFlood(table, estruaryFields, checkedFields, x, y - 1, w, h))
 			return false;
 	}
 
 	if ((*table)[downFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y + 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
-		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y + 1, w, h))
+		if (!tryFlood(table, estruaryFields, checkedFields, x, y + 1, w, h))
 			return false;
 	}
 
@@ -425,7 +425,7 @@ void floodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int> *
 	{
 		for (int j = 0; j < *width; ++j)
 		{
-			while (tryFlood(table, estruaryFields, checkedFields, j, i, width, height))
+			while (tryFloodNaive(table, estruaryFields, checkedFields, j, i, width, height))
 			{
 				(*table)[i * (*width) + j] += 1; //increase field's height
 				capacity += 1;
@@ -454,7 +454,7 @@ void flood(vector<int> * table, vector<int> * estruaryFields, vector<int> * fiel
 			j = *it - i*(*width);
 			if ((*table)[i * (*width) + j] == h)
 			{
-				if (tryFloodNaive(table, estruaryFields, checkedFields, j, i, width, height))
+				if (tryFlood(table, estruaryFields, checkedFields, j, i, width, height))
 				{
 					(*table)[i * (*width) + j] += 1; //increase field's height
 					capacity += 1;
@@ -497,11 +497,11 @@ int main(int argc, char** argv)
 	height = table->size() / width;
 
 	//markEstruaryFields(table, estruaryFields, &width, &height);
-	markEstruaryFieldsNaive(table, estruaryFields, fieldsToVisit, &width, &height);
+	markEstruaryFields(table, estruaryFields, fieldsToVisit, &width, &height);
 
 
-	floodNaive(table, estruaryFields, fieldsToVisit, checkedFields, &width, &height);
-	//flood(table, estruaryFields, checkedFields, &width, &height);
+	floodNaive(table, estruaryFields, checkedFields, &width, &height);
+	flood(table, estruaryFields, fieldsToVisit, checkedFields, &width, &height);
 	//cout << table->size() << " " << estruaryFields->size() << " " << fieldsToVisit->size() << endl;
 	t = clock() - t;
 
