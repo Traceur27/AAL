@@ -25,6 +25,8 @@ GLdouble y = 0;
 GLfloat lm_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
 GLfloat scale = 1.0;
 vector<int> * fieldsToDraw;
+vector<int> * fieldsAfterFlood;
+bool beforeFlood = true;
 
 
 
@@ -36,7 +38,19 @@ void drawFields()
 	glColor3f(0, 0, 1);
 	glTranslatef(-x / 2 + 0.5, y / 2 - 0.5, 0.5);
 
-	for (vector<int>::iterator it = fieldsToDraw->begin(); it != fieldsToDraw->end(); ++it, ++i)
+	vector<int>::iterator it, end;
+	if (beforeFlood)
+	{
+		it = fieldsToDraw->begin();
+		end = fieldsToDraw->end();
+	}
+	else
+	{
+		it = fieldsAfterFlood->begin();
+		end = fieldsAfterFlood->end();
+	}
+
+	for (; it != end; ++it, ++i)
 	{
 		glPushMatrix();
 		for (int h = 0; h < *it; ++h)
@@ -135,6 +149,8 @@ void Keyboard(unsigned char key, int x, int y)
 		scale += 0.1;
 	else if (key == '-' && scale > 0.1)
 		scale -= 0.1;
+	else if (key == 'q')
+		beforeFlood = !beforeFlood;
 
 	Reshape(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
 }
@@ -257,6 +273,30 @@ void markEstruaryFields(vector<int> * tab, vector<int> * eFields, int * w, int *
 }
 
 
+void markEstruaryFieldsNaive(vector<int> * tab, vector<int> * eFields, vector<int> * vFields, int * w, int * h)
+{
+	for (int i = 0; i < *h; ++i)
+	{
+		for (int j = 0; j < *w; ++j)
+		{
+			if (i == 0 || i == *h - 1) //first and last row
+			{
+				eFields->push_back(i*(*w) + j); //saving number of fields
+			}
+
+			else if (j == 0 || j == *w - 1) //first and lasc column
+			{
+				eFields->push_back(i*(*w) + j);
+			}
+			else
+			{
+				vFields->push_back(i*(*w) + j);
+			}
+		}
+	}
+}
+
+
 bool isFieldInside(vector<int> * tab, int x, int y, int * w, int * h)
 {
 	if (x < 0 || x >= *w || y < 0 || y >= *h)
@@ -273,7 +313,7 @@ bool isFieldInside(vector<int> * tab, int x, int y, int * w, int * h)
 }
 
 
-bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * checkedFields, int x, int y, int * w, int * h, int fieldHeight = -1)
+bool tryFloodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int> * checkedFields, int x, int y, int * w, int * h, int fieldHeight = -1)
 {
 	if (isFieldInside(estruaryFields, x, y, w, h))
 		return false;
@@ -325,7 +365,60 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 }
 
 
-void flood(vector<int> * table, vector<int> * estruaryFields, vector<int> * checkedFields, int * width, int * height)
+
+bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * checkedFields, int x, int y, int * w, int * h)
+{
+	if (isFieldInside(estruaryFields, x, y, w, h))
+		return false;
+
+
+	int fieldIndex = y * (*w) + x;
+	//if (fieldHeight == -1)
+	int	fieldHeight = (*table)[fieldIndex];
+
+	int upFieldIndex = fieldIndex - *w;
+	int downFieldIndex = fieldIndex + *w;
+	int rightFieldIndex = fieldIndex + 1;
+	int leftFieldIndex = fieldIndex - 1;
+
+	//all fields around are higher
+	if (fieldHeight < (*table)[upFieldIndex] && fieldHeight < (*table)[downFieldIndex] &&
+		fieldHeight < (*table)[leftFieldIndex] && fieldHeight < (*table)[rightFieldIndex])
+		return true;
+
+	if ((*table)[leftFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x - 1, y, w, h))
+	{
+		checkedFields->push_back(fieldIndex);
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x - 1, y, w, h))
+			return false;
+	}
+
+	if ((*table)[rightFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x + 1, y, w, h))
+	{
+		checkedFields->push_back(fieldIndex);
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x + 1, y, w, h))
+			return false;
+	}
+
+	if ((*table)[upFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y - 1, w, h))
+	{
+		checkedFields->push_back(fieldIndex);
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y - 1, w, h))
+			return false;
+	}
+
+	if ((*table)[downFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y + 1, w, h))
+	{
+		checkedFields->push_back(fieldIndex);
+		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y + 1, w, h))
+			return false;
+	}
+
+	return true;
+}
+
+
+void floodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int> * checkedFields, int * width, int * height)
 {
 	//for all fields
 	for (int i = 0; i < *height; ++i)
@@ -336,10 +429,48 @@ void flood(vector<int> * table, vector<int> * estruaryFields, vector<int> * chec
 			{
 				(*table)[i * (*width) + j] += 1; //increase field's height
 				capacity += 1;
+				checkedFields->clear();
 			}
 			estruaryFields->push_back(i*(*width) + j);
 			checkedFields->clear();
 		}
+	}
+}
+
+
+void flood(vector<int> * table, vector<int> * estruaryFields, vector<int> * fieldsToVisit, vector<int> * checkedFields, int * width, int * height)
+{
+	int i = 0;
+	int j = 0;
+	int h = 0;
+
+	//for all fields left
+	while (fieldsToVisit->size() != 0)
+	{
+		vector<int>::iterator it = fieldsToVisit->begin();
+		while (it != fieldsToVisit->end())
+		{
+			i = *it / (*width);
+			j = *it - i*(*width);
+			if ((*table)[i * (*width) + j] == h)
+			{
+				if (tryFloodNaive(table, estruaryFields, checkedFields, j, i, width, height))
+				{
+					(*table)[i * (*width) + j] += 1; //increase field's height
+					capacity += 1;
+					++it;
+				}
+				else
+				{
+					estruaryFields->push_back(i*(*width) + j);
+					it = fieldsToVisit->erase(it);
+				}
+				checkedFields->clear();
+			}
+			else
+				++it;
+		}
+		++h;
 	}
 }
 
@@ -351,8 +482,10 @@ int main(int argc, char** argv)
 	ifstream input(filename, ios::in);
 	vector<int> * table = new vector<int>();
 	vector<int> * estruaryFields = new vector<int>();
+	vector<int> * fieldsToVisit = new vector<int>();
 	vector<int> * checkedFields = new vector<int>();
 	fieldsToDraw = new vector<int>();
+	fieldsAfterFlood = new vector<int>();
 	int width = 0;
 	int height = 0;
 	clock_t t = clock();
@@ -363,11 +496,16 @@ int main(int argc, char** argv)
 	*fieldsToDraw = *table;
 	height = table->size() / width;
 
-	markEstruaryFields(table, estruaryFields, &width, &height);
+	//markEstruaryFields(table, estruaryFields, &width, &height);
+	markEstruaryFieldsNaive(table, estruaryFields, fieldsToVisit, &width, &height);
 
-	flood(table, estruaryFields, checkedFields, &width, &height);
+
+	floodNaive(table, estruaryFields, fieldsToVisit, checkedFields, &width, &height);
+	//flood(table, estruaryFields, checkedFields, &width, &height);
+	//cout << table->size() << " " << estruaryFields->size() << " " << fieldsToVisit->size() << endl;
 	t = clock() - t;
 
+	*fieldsAfterFlood = *table;
 	cout << capacity << endl;
 	cout << "Calculation took " << (float)t / CLOCKS_PER_SEC << " seconds" << endl;
 
