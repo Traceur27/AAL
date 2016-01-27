@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <ctime>
+#include <cmath>
 
 #define filename "data.txt"
 
@@ -14,12 +15,12 @@ using namespace std;
 int capacity = 0;
 GLfloat rotatex = 0.0;
 GLfloat rotatey = 0.0;
-GLdouble left1 = 0;//-21.0;
-GLdouble right1 = 0;// 21.0;
-GLdouble bottom = 0;// -21.0;
-GLdouble top = 0;// 21.0;
-GLdouble near1 = 1; //1.0;
-GLdouble far1 = 0;// 41.0;
+GLdouble left1 = 0;
+GLdouble right1 = 0;
+GLdouble bottom = 0;
+GLdouble top = 0;
+GLdouble near1 = 1;
+GLdouble far1 = 0;
 GLdouble x = 0;
 GLdouble y = 0;
 GLfloat lm_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
@@ -27,6 +28,7 @@ GLfloat scale = 1.0;
 vector<int> * fieldsToDraw;
 vector<int> * fieldsAfterFlood;
 bool beforeFlood = true;
+char * mode;
 
 
 
@@ -74,7 +76,6 @@ void drawFields()
 			glTranslatef(1, 0, 0);
 	}
 
-
 	glPopMatrix();
 }
 
@@ -86,18 +87,17 @@ void Display()
 	//Clear the color buffer and z buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// wybór macierzy modelowania
-	glMatrixMode(GL_MODELVIEW); //- potrzebne przy rysowaniu primitywuw
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	// przesuniêcie uk³adu wspó³rzêdnych obiektu do œrodka bry³y odcinania
 
-	glTranslatef(0, 0, -11);//-y/2 - 1);
+	//moving coordinate system to the middle of z axis
+	glTranslatef(0, 0, -11);
 
-	// obroty obiektu - klawisze kursora
+	// object rotation
 	glRotatef(rotatex, 1.0, 0, 0);
 	glRotatef(rotatey, 0, 1.0, 0);
 
-	// skalowanie obiektu - klawisze "+" i "-"
+	// object scaling
 	glScalef(scale, scale, scale);
 
 
@@ -120,31 +120,23 @@ void Display()
 
 void Reshape(int width, int height)
 {
-	// obszar renderingu - ca³e okno
 	glViewport(0, 0, width, height);
-
-	// wybór macierzy rzutowania
 	glMatrixMode(GL_PROJECTION);
-
-	// macierz rzutowania = macierz jednostkowa
 	glLoadIdentity();
 
 
 	if (width < height && width > 0)
-		glFrustum(left1, right1, bottom * height / width, top * height / width, near1, far1);
+		glOrtho(left1, right1, bottom * height / width, top * height / width, near1, far1);
 	else
-		// szerokoœæ okna wiêksza lub równa wysokoœci okna
 		if (width >= height && height > 0)
 			glOrtho(left1 * width / height, right1 * width / height, bottom, top, 1, 21);
 
-	//glMatrixMode(GL_MODELVIEW);
 	Display();
 }
 
 
 void Keyboard(unsigned char key, int x, int y)
 {
-	// klawisz +
 	if (key == '+')
 		scale += 0.1;
 	else if (key == '-' && scale > 0.1)
@@ -199,10 +191,8 @@ void initGL(int width, int height)
 	glutReshapeFunc(Reshape);
 	glutIdleFunc(Display);
 
-	// do³¹czenie funkcji obs³ugi klawiatury
 	glutKeyboardFunc(Keyboard);
 
-	// do³¹czenie funkcji obs³ugi klawiszy funkcyjnych i klawiszy kursora
 	glutSpecialFunc(SpecialKeys);
 
 	glEnable(GL_DEPTH_TEST);
@@ -264,7 +254,7 @@ void markEstruaryFieldsNaive(vector<int> * tab, vector<int> * eFields, int * w, 
 				eFields->push_back(i*(*w) + j); //saving number of fields
 			}
 
-			else if (j == 0 || j == *w - 1) //first and lasc column
+			else if (j == 0 || j == *w - 1) //first and last column
 			{
 				eFields->push_back(i*(*w) + j);
 			}
@@ -333,6 +323,7 @@ bool tryFloodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int
 		fieldHeight < (*table)[leftFieldIndex] && fieldHeight < (*table)[rightFieldIndex])
 		return true;
 
+	//left field's height is lower - mark this field as checked and go left
 	if ((*table)[leftFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x - 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -340,6 +331,7 @@ bool tryFloodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int
 			return false;
 	}
 
+	//right field's height is lower - mark this field as checked and go right
 	if ((*table)[rightFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x + 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -347,6 +339,8 @@ bool tryFloodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int
 			return false;
 	}
 
+
+	//up field's height is lower - mark this field as checked and go up
 	if ((*table)[upFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y - 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -354,13 +348,13 @@ bool tryFloodNaive(vector<int> * table, vector<int> * estruaryFields, vector<int
 			return false;
 	}
 
+	//down field's height is lower - mark this field as checked and go down
 	if ((*table)[downFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y + 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
 		if (!tryFloodNaive(table, estruaryFields, checkedFields, x, y + 1, w, h, fieldHeight))
 			return false;
 	}
-
 	return true;
 }
 
@@ -373,7 +367,6 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 
 
 	int fieldIndex = y * (*w) + x;
-	//if (fieldHeight == -1)
 	int	fieldHeight = (*table)[fieldIndex];
 
 	int upFieldIndex = fieldIndex - *w;
@@ -386,6 +379,7 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 		fieldHeight < (*table)[leftFieldIndex] && fieldHeight < (*table)[rightFieldIndex])
 		return true;
 
+	//left field's height is lower - mark this field as checked and go left
 	if ((*table)[leftFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x - 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -393,6 +387,7 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 			return false;
 	}
 
+	//right field's height is lower - mark this field as checked and go right
 	if ((*table)[rightFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x + 1, y, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -400,6 +395,7 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 			return false;
 	}
 
+	//up field's height is lower - mark this field as checked and go up
 	if ((*table)[upFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y - 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -407,6 +403,7 @@ bool tryFlood(vector<int> * table, vector<int> * estruaryFields, vector<int> * c
 			return false;
 	}
 
+	//down field's height is lower - mark this field as checked and go down
 	if ((*table)[downFieldIndex] <= fieldHeight && !isFieldInside(checkedFields, x, y + 1, w, h))
 	{
 		checkedFields->push_back(fieldIndex);
@@ -477,9 +474,7 @@ void flood(vector<int> * table, vector<int> * estruaryFields, vector<int> * fiel
 
 int main(int argc, char** argv)
 {
-	//get data from file, create table and start flood procedure
-	//then present results
-	ifstream input(filename, ios::in);
+	ifstream input;//(filename, ios::in);
 	vector<int> * table = new vector<int>();
 	vector<int> * estruaryFields = new vector<int>();
 	vector<int> * fieldsToVisit = new vector<int>();
@@ -488,7 +483,24 @@ int main(int argc, char** argv)
 	fieldsAfterFlood = new vector<int>();
 	int width = 0;
 	int height = 0;
-	clock_t t = clock();
+	mode = new char();
+	char *name = new char();
+
+	if (argc != 3)
+	{
+		cout << "Uzycie programu: WaterFlooding dane.txt tryb(n lub u)" << endl;
+		exit(1);
+	}
+
+	name = argv[1];
+	mode = argv[2];
+
+	input.open(name, ios::in);
+	
+	if (*mode != 'u' && *mode != 'n')
+	{
+		*mode = 'u';
+	}
 
 
 	countRows(&width, &input);
@@ -496,36 +508,28 @@ int main(int argc, char** argv)
 	*fieldsToDraw = *table;
 	height = table->size() / width;
 
-	//markEstruaryFields(table, estruaryFields, &width, &height);
-	markEstruaryFields(table, estruaryFields, fieldsToVisit, &width, &height);
+	clock_t t = clock();
 
+	if (*mode == 'n')
+	{
+		markEstruaryFieldsNaive(table, estruaryFields, &width, &height);
+		floodNaive(table, estruaryFields, checkedFields, &width, &height);
+	}
+	else if (*mode == 'u')
+	{
+		markEstruaryFields(table, estruaryFields, fieldsToVisit, &width, &height);
+		flood(table, estruaryFields, fieldsToVisit, checkedFields, &width, &height);
+	}
 
-	floodNaive(table, estruaryFields, checkedFields, &width, &height);
-	flood(table, estruaryFields, fieldsToVisit, checkedFields, &width, &height);
-	//cout << table->size() << " " << estruaryFields->size() << " " << fieldsToVisit->size() << endl;
 	t = clock() - t;
 
 	*fieldsAfterFlood = *table;
-	cout << capacity << endl;
+	cout << "Computed capacity: " << capacity << endl;
 	cout << "Calculation took " << (float)t / CLOCKS_PER_SEC << " seconds" << endl;
+	//cout << "q = " << ((float)t / CLOCKS_PER_SEC * 32768) / (1.141f * pow(width, 5)) << endl;
 
 	initGL(width, height);
 	
-	/*cout << isFieldInside(estruaryFields, 8, 3, &width, &height) << " ";
-	for (vector<int>::iterator it = estruaryFields->begin(); it != estruaryFields->end(); ++it)
-	{
-		cout << (*it) << " ";
-	}
-
-	cout << "\n" << estruaryFields->size() << endl;
-
-	cout << "Szerokosc: " << width << ", wysokosc: " << height << endl;
-	
-	for (vector<int>::iterator it = table->begin(); it != table->end(); ++it)
-	{
-		cout << (*it) << endl;
-	}
-	*/
 	cin.get();
 
 	return 0;
