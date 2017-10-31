@@ -1,6 +1,5 @@
-#include <windows.h>
 #include <GL/gl.h>
-#include "glut.h"
+#include <GL/glut.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -501,6 +500,7 @@ int main(int argc, char** argv)
 	{
 		*mode = 'u';
 	}
+	glutInit( &argc, argv);
 
 
 	countRows(&width, &input);
