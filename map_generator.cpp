@@ -1,13 +1,12 @@
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
 
 using namespace std;
 
 
 int main(int argc, char** argv)
 {
-	ofstream myfile;
+	ofstream output_file;
 	int rows = 0;
 	int columns = 0;
 	int height = 0;
@@ -15,7 +14,7 @@ int main(int argc, char** argv)
 
 	if (argc != 5)
 	{
-		cout << "Sposob uzycia: generator rzedy kolumny wysokosc tryb(r - losowy, n - przypadek pesymistyczny" << endl;
+		cout << "Usage: ./Flood <number_of_rows> <number_of_columns> <height> <mode>(r - random, n - pessimistic case)" << endl;
 		exit(0);
 	}
 
@@ -26,39 +25,29 @@ int main(int argc, char** argv)
 
 	if (*mode != 'n' && *mode != 'r')
 	{
-		cout << "Sposob uzycia: generator rzedy kolumny wysokosc" << endl;
+		cout << "Usage: ./Flood <number_of_rows> <number_of_columns> <height> <mode>(r - random, n - pessimistic case)" << endl;
 		exit(0);
 	}
 
-	myfile.open("data.txt");
+	output_file.open("data.txt");
 
 	if (*mode == 'n')
 	{
-		////fill
 		for (int i = 0; i < rows; ++i)
 		{
 			for (int j = 0; j < columns; ++j)
 			{
 				if (i == 0 || i == rows - 1) //first and last rows - all have hight value
-				{
-					myfile << height;
-				}
+					output_file << height;
 				else if (j == 0 || j == columns - 1) //first and last rows - all have hight value
-				{
-					myfile << height;
-				}
+					output_file << height;
 				else
-				{
-					myfile << 0;
-				}
-
+					output_file << 0;
 
 				if (j == columns - 1)
-				{
-					myfile << endl;
-				}
+					output_file << endl;
 				else
-					myfile << " ";
+					output_file << " ";
 			}
 		}
 	}
@@ -68,15 +57,11 @@ int main(int argc, char** argv)
 		for (int i = 0; i < rows; ++i)
 		{
 			for (int j = 0; j < columns; ++j)
-			{
-				myfile << rand() % 10 << " ";
-			}
-			myfile << endl;
+				output_file << rand() % 10 << " ";
+			output_file << endl;
 		}
 	}
 
-	myfile.close();
-
-
+	output_file.close();
 	return 0;
 }

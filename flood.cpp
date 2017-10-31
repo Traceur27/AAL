@@ -3,10 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <ctime>
-#include <cmath>
-
-#define filename "data.txt"
 
 using namespace std;
 
@@ -487,7 +483,7 @@ int main(int argc, char** argv)
 
 	if (argc != 3)
 	{
-		cout << "Uzycie programu: WaterFlooding dane.txt tryb(n lub u)" << endl;
+		cout << "Usage: ./Flood <data_file_path> <mode>(n - naive, u - my algorithm)" << endl;
 		exit(1);
 	}
 
@@ -526,7 +522,6 @@ int main(int argc, char** argv)
 	*fieldsAfterFlood = *table;
 	cout << "Computed capacity: " << capacity << endl;
 	cout << "Calculation took " << (float)t / CLOCKS_PER_SEC << " seconds" << endl;
-	//cout << "q = " << ((float)t / CLOCKS_PER_SEC * 32768) / (1.141f * pow(width, 5)) << endl;
 
 	initGL(width, height);
 	
