@@ -1,5 +1,5 @@
 # Flooding algorithm
-Comparision of two algorithms(naive and more optimal) which are computing the number of flooded fields on provided 3D map.
+Comparision of two algorithms(naive and more optimal) which are computing the number of flooded fields on provided 3D map. It's written in C++ and uses OpenGL to visualize maps.
 
 ## Usage
 Requirements:
@@ -21,6 +21,3 @@ Controls:
 * use arrow keys to rotate the board
 * use 'q' to show map before/after flooding
 * use '+', '-' to zoom in/out
-
-## Screenshot
-![](screenshots/pacman.png?raw=true)
